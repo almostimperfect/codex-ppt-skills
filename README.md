@@ -1,6 +1,6 @@
 # Codex PPT Skills
 
-Version: v1.0
+Version: v1.1
 
 中文说明: [README.zh-CN.md](README.zh-CN.md)
 
@@ -40,12 +40,25 @@ This is useful when an image-generated deck needs follow-up text editing while p
 
 ## Installation
 
-Copy the skill folders into your Codex skills directory:
+Install with the skills CLI:
 
 ```bash
-mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-cp -R .codex/skills/image-based-ppt-generator "${CODEX_HOME:-$HOME/.codex}/skills/"
-cp -R .codex/skills/image-ppt-to-editable "${CODEX_HOME:-$HOME/.codex}/skills/"
+npx skills add almostimperfect/codex-ppt-skills -a codex -g
+```
+
+List available skills before installing:
+
+```bash
+npx skills add almostimperfect/codex-ppt-skills --list
+```
+
+Install specific skills:
+
+```bash
+npx skills add almostimperfect/codex-ppt-skills \
+  --skill image-based-ppt-generator \
+  --skill image-ppt-to-editable \
+  -a codex -g
 ```
 
 Restart or refresh Codex so the new skills are discovered.
@@ -53,7 +66,7 @@ Restart or refresh Codex so the new skills are discovered.
 ## Repository Layout
 
 ```text
-.codex/skills/
+.agents/skills/
   image-based-ppt-generator/
     SKILL.md
     agents/openai.yaml
@@ -86,6 +99,11 @@ Image generation, image editing, slide rendering, and visual QA depend on the to
 - Keep detailed prompt and QA guidance in `references/`.
 
 ## Changelog
+
+### v1.1
+
+- Moved published skills from `.codex/skills/` to `.agents/skills/` for skills CLI discovery and local project testing.
+- Updated installation instructions to use `npx skills add`.
 
 ### v1.0
 

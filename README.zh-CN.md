@@ -1,6 +1,6 @@
 # Codex PPT Skills
 
-版本：v1.0
+版本：v1.1
 
 本仓库包含两个可复用的 Codex skills，用于制作和转换图片版 PowerPoint。
 
@@ -38,12 +38,25 @@
 
 ## 安装
 
-将 skill 文件夹复制到你的 Codex skills 目录：
+使用 skills CLI 安装：
 
 ```bash
-mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-cp -R .codex/skills/image-based-ppt-generator "${CODEX_HOME:-$HOME/.codex}/skills/"
-cp -R .codex/skills/image-ppt-to-editable "${CODEX_HOME:-$HOME/.codex}/skills/"
+npx skills add almostimperfect/codex-ppt-skills -a codex -g
+```
+
+安装前查看可用 skills：
+
+```bash
+npx skills add almostimperfect/codex-ppt-skills --list
+```
+
+只安装指定 skills：
+
+```bash
+npx skills add almostimperfect/codex-ppt-skills \
+  --skill image-based-ppt-generator \
+  --skill image-ppt-to-editable \
+  -a codex -g
 ```
 
 然后重启或刷新 Codex，让新的 skills 被发现。
@@ -51,7 +64,7 @@ cp -R .codex/skills/image-ppt-to-editable "${CODEX_HOME:-$HOME/.codex}/skills/"
 ## 仓库结构
 
 ```text
-.codex/skills/
+.agents/skills/
   image-based-ppt-generator/
     SKILL.md
     agents/openai.yaml
@@ -84,6 +97,11 @@ python3 -m pip install python-pptx
 - 详细 prompt 和 QA 规则放在 `references/`。
 
 ## 更新记录
+
+### v1.1
+
+- 将发布用 skills 从 `.codex/skills/` 移动到 `.agents/skills/`，便于 skills CLI 发现，也便于本地项目级测试。
+- 将安装说明更新为 `npx skills add`。
 
 ### v1.0
 
