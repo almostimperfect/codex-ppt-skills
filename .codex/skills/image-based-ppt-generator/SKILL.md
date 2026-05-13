@@ -5,7 +5,7 @@ description: Create, revise, regenerate, or package image-based PowerPoint decks
 
 # Image-Based PPT Generator
 
-Use this skill to create a PPTX where every slide is a full-page raster image. The final deck prioritizes visual polish and consistent page design over native text editability.
+Use this skill to create a PPTX where every slide is a full-page raster image. The final deck prioritizes visual polish, consistent page design, and reliable full-slide packaging.
 
 ## Core Rules
 
