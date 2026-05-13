@@ -1,0 +1,98 @@
+---
+name: image-ppt-to-editable
+description: Convert image-based PowerPoint decks into semi-editable PPTX files by isolating each slide image, using AI visual understanding to recover text and layout, generating a textless version of each slide in a clean context, then rebuilding editable text boxes over the cleaned background. Use when the user wants a picture-only PPT, generated slide deck, or screenshot-based presentation converted into a layered PPT where text can be revised.
+---
+
+# Image PPT To Editable
+
+## Purpose
+
+Use this skill to convert a picture-only deck into a semi-editable deck:
+
+- bottom layer: textless slide image background
+- top layer: editable PowerPoint text boxes reconstructed from the original image
+
+This is not a full vector reconstruction workflow. Preserve image style and make text editable; do not attempt to recreate every table line, icon, or illustration as native PPT shapes unless the user explicitly asks.
+
+## Core Principle
+
+Do the text-removal image edit in an isolated context per slide. Do not ask the image model to edit a target slide from a long thread containing many related slide previews. Long multimodal context can cause the model to borrow layout from other images and add or remove non-text elements.
+
+Preferred isolation methods:
+
+- Use a subagent or clean child context for exactly one slide image.
+- Use a clean work item containing only the target slide image and the short text-removal prompt.
+- If subagents are unavailable, start a minimal local iteration where the target image is the only visible image immediately before image generation.
+
+The main agent owns orchestration, validation, and final packaging. Isolated workers only produce one textless background image at a time.
+
+## Workflow
+
+1. **Intake**
+   - Identify the source PPTX or slide images.
+   - If the source is PPTX, extract or render each slide to a full-page PNG.
+   - Keep page size and slide order.
+
+2. **Visual Text Understanding**
+   - Use Agent visual understanding on the original target slide image.
+   - Extract a structured text layout, not just raw OCR:
+     - text
+     - approximate bounding box
+     - role: title, subtitle, metric, table_header, table_cell, card_title, card_body, icon_label
+     - grouping: table, metric cluster, card group, flow step
+     - style hints: size, color, weight, alignment
+   - Use traditional OCR only as an optional helper. Do not make OCR the default source of truth.
+
+3. **Generate Textless Background**
+   - Run image generation/editing in a clean per-slide context.
+   - Use the concise prompt in `references/text-removal-prompts.md` as the default.
+   - Preserve all non-text visual elements: icons, table lines, cards, illustrations, gradients, shadows, colors, and layout.
+   - Remove all readable text in any language, including digits, percentages, labels, table contents, and small captions.
+
+4. **Validate Textless Background**
+   - Compare original and textless images visually.
+   - Pass only if:
+     - no readable text remains
+     - no new non-text elements were added
+     - no important icons or illustrations were removed
+     - table and card structure stayed close enough for text overlay
+     - slide size/aspect ratio is unchanged
+   - If validation fails, retry the textless background in a clean context with a slightly stricter prompt. Do not keep retrying blindly; report persistent failures.
+
+5. **Rebuild Editable Text Layer**
+   - Place the textless background as a full-slide image.
+   - Add PowerPoint text boxes from the visual text layout.
+   - Use the source deck size when available; otherwise use a standard 16:9 widescreen slide.
+   - Approximate font size, color, boldness, and alignment.
+   - Set language-appropriate fonts in the layout JSON when needed; rely on script defaults only as fallbacks.
+   - Tables can remain image backgrounds; put editable table cell text on top.
+   - Keep text boxes simple and easy to edit. Prefer one text box per meaningful line/cell over one giant text box.
+
+6. **Render And QA**
+   - Render the rebuilt PPTX to PNG previews.
+   - Inspect for:
+     - text/background misalignment
+     - duplicate text or residual ghost text
+     - clipped or overlapping text boxes
+     - missing rows, labels, or metrics
+   - When possible, compare against the original image and produce a short issue list.
+
+7. **Deliver**
+   - Return the semi-editable PPTX path.
+   - Return preview paths and any per-slide known issues.
+   - State clearly that the output is semi-editable: text is editable, but backgrounds, icons, tables, and illustrations remain images.
+
+## Recommended POC Strategy
+
+Before batch conversion, test the hardest slide first: usually a dense table or metric page.
+
+1. Convert one slide.
+2. Render the semi-editable result.
+3. Ask the user whether the textless background and overlay quality are acceptable.
+4. Batch the remaining slides only after the sample passes.
+
+## Resources
+
+- `references/text-removal-prompts.md`: prompts for per-slide textless background generation.
+- `references/layout-json.md`: suggested structure for visual text layout extraction.
+- `scripts/package_editable_layers.py`: package textless backgrounds plus layout JSON into a semi-editable PPTX.
