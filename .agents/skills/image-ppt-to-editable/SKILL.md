@@ -5,7 +5,7 @@ description: 将图片版 PPT、纯图片 PPT、截图式幻灯片或图片生�
 
 # Image PPT To Editable
 
-Version: v1.4
+Version: v1.5
 
 ## 用途
 
@@ -32,6 +32,28 @@ Version: v1.4
 不要切换成 OCR-first 流程。OCR 只能作为辅助检查，用来发现视觉理解之后是否遗漏了小字或数字。真正的 source of truth 是 Agent 对原始页面的视觉理解，包括文本语义、分组、位置、字号、颜色、粗细和对齐。
 
 如果当前环境没有任何可用的图像编辑或图像生成能力来创建 textless background，必须停止并报告 blocker。不要静默退化成“原图 + 可编辑文字层”的 PPTX。
+
+## Hard Stop Checklist
+
+创建任何可编辑 PPTX 之前，Agent 必须明确确认：
+
+- 已识别源 deck 或逐页图片。
+- 只打开了用户指定的源版本和必要工作文件；没有打开被用户禁止或无关的参考版本。
+- 可执行逐页视觉理解 workflow。
+- 有真实可用的图像编辑或图像生成路径来创建 textless backgrounds。
+- OCR 不会作为 layout JSON 或 editable text boxes 的主要来源。
+- 首个输出会是一个困难页 POC，除非用户明确要求直接批量处理。
+- 最终 PPTX 打包路径会使用 textless backgrounds，而不是原始幻灯片图片。
+
+如果任一项不满足，必须停止并报告 blocker。不要创建 fallback editable PPTX。
+
+## Forbidden Fallbacks
+
+- 不要创建“原始图片 + 可编辑文字叠加层”的 PPTX。
+- 不要用 OCR 输出自动生成主要 layout JSON。
+- 不要把本地 blur、mask、crop 或 inpaint 脚本当作 textless background 生成能力的替代品，除非每页经过视觉验证且没有任何可读文字残留。
+- 不要在一个困难页 POC 通过视觉 QA 之前批量处理，除非用户明确要求直接批量处理。
+- 不要交付背景中可见重复文字、ghost text 或可读文字残留的 PPTX。
 
 ## 核心原则
 
@@ -109,9 +131,9 @@ Version: v1.4
    - 返回预览图路径和每页已知问题。
    - 明确说明：文字可编辑；背景、图标、表格线和插图仍然是图片。
 
-## 推荐 POC 策略
+## 默认 POC 策略
 
-批量转换前先测最难的一页，通常是密集表格页或指标页。
+默认情况下，批量转换前必须先测最难的一页，通常是密集表格页或指标页。只有用户明确要求直接批量处理时，才可以跳过 POC。
 
 1. 先转换一页。
 2. 渲染文字可编辑结果。
@@ -126,6 +148,7 @@ Version: v1.4
 
 ## 版本记录
 
+- v1.5: 增加 Hard Stop Checklist 和 Forbidden Fallbacks，并将 POC 策略改为默认强制流程，防止 OCR-first、原图叠字和未验证批量处理。
 - v1.4: 将 skill frontmatter 和正文改为中文主导，并保留关键英文技术词，提升中文“可编辑版本/文字可编辑”请求的触发和执行稳定性。
 - v1.3: 扩展 “editable version”“text-editable” 及中文等价说法的触发措辞。
 - v1.2: 明确文字可编辑重建契约：必须使用去文字底图，OCR 只能辅助检查，不能退化为在原图上叠加可编辑文字。
