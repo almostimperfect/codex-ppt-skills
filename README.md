@@ -1,6 +1,6 @@
 # Codex PPT Skills
 
-Version: v1.1
+Version: v1.2
 
 中文说明: [README.zh-CN.md](README.zh-CN.md)
 
@@ -81,9 +81,13 @@ Restart or refresh Codex so the new skills are discovered.
 
 ## Requirements
 
-The bundled scripts use Python and `python-pptx`.
+The bundled scripts are convenience helpers and reference implementations, not mandatory runtime requirements.
 
-Install the Python dependency if it is not already available:
+Codex can use them when their dependencies are already available, or follow the same packaging logic with equivalent tools in the user's environment, such as a Node.js PPTX library, direct Open XML PPTX generation, an available office tool, or another reliable PPTX writer.
+
+Codex should not assume that installing these skills automatically installs Python packages. If a helper needs `python-pptx` and it is missing, package installation is an environment-specific option and may require user approval.
+
+For environments where using the bundled Python helper is appropriate:
 
 ```bash
 python3 -m pip install python-pptx
@@ -99,6 +103,11 @@ Image generation, image editing, slide rendering, and visual QA depend on the to
 - Keep detailed prompt and QA guidance in `references/`.
 
 ## Changelog
+
+### v1.2
+
+- Clarified that bundled scripts are convenience helpers and reference implementations, not hard runtime requirements.
+- Clarified that Codex should adapt to locally available tools and should not assume skill installation automatically installs Python packages.
 
 ### v1.1
 

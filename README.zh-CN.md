@@ -1,6 +1,6 @@
 # Codex PPT Skills
 
-版本：v1.1
+版本：v1.2
 
 本仓库包含两个可复用的 Codex skills，用于制作和转换图片版 PowerPoint。
 
@@ -79,9 +79,13 @@ npx skills add almostimperfect/codex-ppt-skills \
 
 ## 依赖
 
-内置脚本使用 Python 和 `python-pptx`。
+内置脚本是方便使用的辅助工具和参考实现，不是强制运行时依赖。
 
-如果环境中还没有安装依赖，可以执行：
+当依赖已经可用时，Codex 可以直接使用这些脚本；如果脚本无法运行，Codex 也可以参考脚本逻辑，改用用户环境中可用的等价方法继续完成打包，例如 Node.js PPTX 库、直接生成 Open XML PPTX、可用的办公软件工具，或其他可靠的 PPTX 写入方式。
+
+安装这些 skills 不应被理解为会自动安装 Python 包。如果某个辅助脚本需要 `python-pptx` 但环境中没有，安装包只是一个与环境相关的可选方案，并且可能需要用户批准。
+
+如果当前环境适合使用内置 Python 辅助脚本，可以执行：
 
 ```bash
 python3 -m pip install python-pptx
@@ -97,6 +101,11 @@ python3 -m pip install python-pptx
 - 详细 prompt 和 QA 规则放在 `references/`。
 
 ## 更新记录
+
+### v1.2
+
+- 明确内置脚本是辅助工具和参考实现，不是硬性运行时依赖。
+- 明确 Codex 应根据本地可用工具继续完成任务，且不应假设安装 skill 会自动安装 Python 包。
 
 ### v1.1
 

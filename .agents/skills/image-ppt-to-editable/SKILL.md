@@ -5,6 +5,8 @@ description: Convert image-based PowerPoint decks into semi-editable PPTX files 
 
 # Image PPT To Editable
 
+Version: v1.1
+
 ## Purpose
 
 Use this skill to convert a picture-only deck into a semi-editable deck:
@@ -13,6 +15,8 @@ Use this skill to convert a picture-only deck into a semi-editable deck:
 - top layer: editable PowerPoint text boxes reconstructed from the original image
 
 This is not a full vector reconstruction workflow. Preserve image style and make text editable; do not attempt to recreate every table line, icon, or illustration as native PPT shapes unless the user explicitly asks.
+
+Bundled scripts are convenience helpers and reference implementations, not mandatory runtime requirements. If a script cannot run in the user's environment, continue with an equivalent local method that preserves the same output contract.
 
 ## Core Principle
 
@@ -62,6 +66,9 @@ The main agent owns orchestration, validation, and final packaging. Isolated wor
 5. **Rebuild Editable Text Layer**
    - Place the textless background as a full-slide image.
    - Add PowerPoint text boxes from the visual text layout.
+   - Prefer `scripts/package_editable_layers.py` when Python and `python-pptx` are already available.
+   - If the helper cannot run, read it as a reference for the expected layout behavior and continue with an equivalent method available in the environment, such as a Node.js PPTX library, a locally available office tool, direct Open XML generation, or another reliable PPTX writer.
+   - Do not stop only because a convenience script is missing a dependency. Install missing packages only when appropriate for the environment and after any required user approval.
    - Use the source deck size when available; otherwise use a standard 16:9 widescreen slide.
    - Approximate font size, color, boldness, and alignment.
    - Set language-appropriate fonts in the layout JSON when needed; rely on script defaults only as fallbacks.
@@ -95,4 +102,8 @@ Before batch conversion, test the hardest slide first: usually a dense table or 
 
 - `references/text-removal-prompts.md`: prompts for per-slide textless background generation.
 - `references/layout-json.md`: suggested structure for visual text layout extraction.
-- `scripts/package_editable_layers.py`: package textless backgrounds plus layout JSON into a semi-editable PPTX.
+- `scripts/package_editable_layers.py`: convenience helper and reference implementation for packaging textless backgrounds plus layout JSON into a semi-editable PPTX.
+
+## Revision Notes
+
+- v1.1: Clarified that bundled scripts are convenience helpers, not hard requirements; agents should adapt packaging to available local tools and only install dependencies when appropriate.

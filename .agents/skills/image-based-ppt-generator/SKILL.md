@@ -7,7 +7,7 @@ description: Create, revise, regenerate, or package image-based PowerPoint decks
 
 Use this skill to create a PPTX where every slide is a full-page raster image. The final deck prioritizes visual polish, consistent page design, and reliable full-slide packaging.
 
-Version: v1.1
+Version: v1.2
 
 ## Core Rules
 
@@ -21,6 +21,7 @@ Version: v1.1
 - Limit the subagent to clean per-slide image prompts. Do not ask it to generate images, edit files, package PPTX files, or inspect generated outputs.
 - Preserve factual content from supplied materials. Do not invent names, figures, dates, product claims, table rows, or status details.
 - Create versioned outputs. Do not overwrite user-supplied files.
+- Treat bundled scripts as convenience helpers and reference implementations, not mandatory runtime requirements. If a script cannot run in the user's environment, continue with an equivalent local method that preserves the same output contract.
 
 ## Workflow
 
@@ -59,7 +60,9 @@ Version: v1.1
    - Use versioned folders, for example `image-based-ppt-v1/slides/slide-01.png` and `image-based-ppt-v1/prompts/slide-01.txt`.
 
 6. **Package the PPTX**
-   - Use `scripts/images_to_pptx.py` to place one image per slide.
+   - Prefer `scripts/images_to_pptx.py` when Python and its required packages are already available.
+   - If the helper cannot run, read it as a reference for the required behavior and continue with an equivalent packaging method available in the environment, such as a direct Open XML PPTX zip, a Node.js PPTX library, a locally available office tool, or another reliable PPTX writer.
+   - Do not stop only because a convenience script is missing a dependency. Install missing packages only when appropriate for the environment and after any required user approval.
    - Match a source deck's dimensions when iterating from an existing PPTX. Otherwise default to 16:9, `20 x 11.25` inches.
    - Save a versioned PPTX filename.
 
@@ -87,7 +90,7 @@ Version: v1.1
 
 - `references/prompt-rules.md`: prompt-writing rules, templates, and safety constraints.
 - `references/qa-checklist.md`: final checks before delivery.
-- `scripts/images_to_pptx.py`: package a directory of full-slide images into a PPTX.
+- `scripts/images_to_pptx.py`: convenience helper and reference implementation for packaging a directory of full-slide images into a PPTX.
 
 ## Final Response
 
@@ -101,4 +104,5 @@ Return:
 
 ## Revision Notes
 
+- v1.2: Clarified that bundled scripts are convenience helpers, not hard requirements; agents should adapt packaging to the user's available environment and only install dependencies when appropriate.
 - v1.1: Clarified that `image_gen` is the primary renderer for final slide images; programmatic drawing is limited to auxiliary QA, previews, extraction, and packaging unless the user explicitly switches workflows.
