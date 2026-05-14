@@ -1,6 +1,6 @@
 # Codex PPT Skills
 
-Version: v1.2
+Version: v1.3
 
 中文说明: [README.zh-CN.md](README.zh-CN.md)
 
@@ -103,6 +103,11 @@ Image generation, image editing, slide rendering, and visual QA depend on the to
 - Keep detailed prompt and QA guidance in `references/`.
 
 ## Changelog
+
+### v1.3
+
+- Strengthened `image-ppt-to-editable` so the required flow is visual layout extraction, per-slide textless background generation, editable text overlay, and rendered QA.
+- Clarified that OCR is only a secondary check and that overlaying editable text on the original image is a failed conversion.
 
 ### v1.2
 

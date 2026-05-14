@@ -2,6 +2,8 @@
 
 Use this shape for per-slide layout records. Coordinates should use source-image pixels unless noted otherwise.
 
+Create this JSON from Agent visual understanding of the original slide image. Do not make OCR output the source of truth. OCR can be used only as a secondary check for missed small labels or digits.
+
 ```json
 {
   "slide": 1,
@@ -26,6 +28,7 @@ Use this shape for per-slide layout records. Coordinates should use source-image
 
 Guidelines:
 
+- The layout JSON describes only editable text overlays. Non-text visuals remain in the cleaned background image.
 - Keep table cells as separate items when the user is likely to edit them.
 - Keep metric number, metric label, and metric sublabel separate.
 - Use stable group names such as `summary_table`, `detail_table`, `metric_cluster_1`, `bottom_cards`.

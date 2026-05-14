@@ -1,6 +1,6 @@
 # Codex PPT Skills
 
-版本：v1.2
+版本：v1.3
 
 本仓库包含两个可复用的 Codex skills，用于制作和转换图片版 PowerPoint。
 
@@ -101,6 +101,11 @@ python3 -m pip install python-pptx
 - 详细 prompt 和 QA 规则放在 `references/`。
 
 ## 更新记录
+
+### v1.3
+
+- 强化 `image-ppt-to-editable`：必须按视觉版式识别、逐页生成无文字底图、叠加可编辑文字层、渲染 QA 的流程执行。
+- 明确 OCR 只能作为辅助检查，直接在原图上叠加可编辑文字属于失败转换。
 
 ### v1.2
 

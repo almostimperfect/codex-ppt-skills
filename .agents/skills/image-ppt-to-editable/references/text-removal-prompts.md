@@ -14,6 +14,8 @@ For English-language operation, use the equivalent:
 Redraw this image and remove all text so I can edit the text again. Do not change anything else.
 ```
 
+This textless output is mandatory for the final PPTX background. Do not package the original extracted slide image as the background after creating editable text boxes.
+
 ## Slightly Stricter Prompt
 
 Use when the default prompt leaves residual text or changes non-text elements:
@@ -41,3 +43,5 @@ Reject the generated textless background when:
 - the slide is restyled instead of cleaned
 
 If failures repeat, isolate harder: pass only the single target image to a fresh context/subagent.
+
+If a textless background cannot be produced with the available tools, report that blocker instead of falling back to editable text over the original image.

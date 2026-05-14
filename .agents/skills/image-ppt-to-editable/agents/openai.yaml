@@ -1,4 +1,4 @@
 interface:
   display_name: "Image PPT To Editable"
   short_description: "Convert image PPTs into editable text decks"
-  default_prompt: "Use $image-ppt-to-editable to convert this image-based PPT into a semi-editable PPT with text boxes over textless backgrounds."
+  default_prompt: "Use $image-ppt-to-editable to convert this image-based PPT into a semi-editable PPT: extract/render original slide images, use visual understanding for layout JSON, generate a separate textless background for every slide, then place editable text boxes over the cleaned backgrounds. Do not use OCR as the source of truth and do not overlay text on the original images."
