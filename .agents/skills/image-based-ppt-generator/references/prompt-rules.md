@@ -1,5 +1,7 @@
 # Prompt Rules
 
+Version: v1.1
+
 ## Clean Prompt Subagent
 
 Use this structure when asking a subagent for prompts:
@@ -19,7 +21,8 @@ Rules:
 3. Make each prompt self-contained so it can be sent directly to an image model.
 4. Each prompt must start with:
    Create a 16:9 PowerPoint slide as a single polished final slide image, all text included, Chinese text crisp and readable.
-5. Output each slide as:
+5. Do not propose rendering the final slide with Python, PIL, SVG, HTML/CSS, canvas, matplotlib, or other programmatic drawing. The prompt is for direct image-model generation.
+6. Output each slide as:
    Slide NN
    title:
    slide_text:
@@ -35,6 +38,7 @@ Use one prompt per slide.
 Create a 16:9 PowerPoint slide as a single polished final slide image, all text included, Chinese text crisp and readable.
 Generate the complete slide image directly with all text included.
 Preserve the exact text, product names, numbers, dates, and table rows below.
+Do not describe or imply a programmatic drawing workflow. This prompt will be sent directly to an image model.
 
 Style contract:
 <paste the user-approved style contract or reference-derived style. Do not invent one if confirmation is required.>
@@ -89,6 +93,7 @@ Preserve every row and every column exactly.
 Do not merge rows. Do not omit rows.
 Do not invent extra labels, amounts, names, or statuses.
 Use clear header bars and light row separation.
+Use large enough typography for visual inspection. If the content is too dense for one readable slide, prioritize faithful readable layout over decorative density.
 ```
 
 ## Regeneration Fixes
@@ -113,3 +118,7 @@ Preserve everything else exactly: all other text, numbers, tables, icons, colors
 Do not add new text. Do not move other elements.
 Output a complete 16:9 slide image.
 ```
+
+## Revision Notes
+
+- v1.1: Added explicit direct image-generation constraints and blocked programmatic final rendering as a fallback for dense text.

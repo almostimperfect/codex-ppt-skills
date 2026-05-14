@@ -7,9 +7,14 @@ description: Create, revise, regenerate, or package image-based PowerPoint decks
 
 Use this skill to create a PPTX where every slide is a full-page raster image. The final deck prioritizes visual polish, consistent page design, and reliable full-slide packaging.
 
+Version: v1.1
+
 ## Core Rules
 
 - Separate content planning from image generation.
+- Treat the image model as the final slide renderer. The expected path is to generate complete slide images directly, then inspect and regenerate or edit images as needed.
+- Do not replace image generation with programmatic slide drawing. Python, PIL, SVG, HTML/CSS screenshots, canvas, or plotting libraries may support extraction, contact sheets, previews, QA, or PPTX packaging, but must not be used as the primary method to render final slide pages unless the user explicitly asks for programmatic rendering or the task switches away from image-generated PPT.
+- Dense Chinese text, numbers, tables, and labels are reasons to write stricter prompts, use larger typography, simplify layout density, inspect outputs carefully, and regenerate flawed pages. They are not by themselves a reason to bypass `image_gen`.
 - Keep user intent and supplied materials authoritative for content, style, scope, and output format.
 - Always use a clean prompt-writing subagent before final image generation. This prevents earlier drafts, rejected copy, and unrelated context from leaking into slide images.
 - Use `spawn_agent` with `fork_context=false` for prompt writing. Pass only the approved or active task brief, extracted content, style requirements, slide count, and page-specific constraints.
@@ -48,6 +53,8 @@ Use this skill to create a PPTX where every slide is a full-page raster image. T
 5. **Generate full-slide images**
    - Use the built-in `image_gen` tool once per slide.
    - Generate each slide as a complete 16:9 final slide image with all visible text included.
+   - Do not create final slide images by drawing text, cards, tables, charts, or layouts with PIL, matplotlib, SVG, HTML/CSS, canvas, or similar deterministic renderers. Those tools are allowed only for auxiliary artifacts such as source extraction, contact sheets, QA annotations, or packaging helpers.
+   - If exact text fidelity is critical, reduce visual density, make the text larger, split content across more slides when allowed, or regenerate/edit the image after QA. Do not silently downgrade to programmatic rendering.
    - Copy the newest generated image from `$CODEX_HOME/generated_images` into the project slide directory. Keep original generated files in place.
    - Use versioned folders, for example `image-based-ppt-v1/slides/slide-01.png` and `image-based-ppt-v1/prompts/slide-01.txt`.
 
@@ -60,6 +67,7 @@ Use this skill to create a PPTX where every slide is a full-page raster image. T
    - Read `references/qa-checklist.md`.
    - Render the PPTX to PNG previews when a rendering path is available, or inspect a contact sheet of generated slide images.
    - Verify expected slide count, page order, no blank slides, no black bars or cropping, and one full-page image per slide.
+   - Inspect text-heavy slides for wrong characters, missing labels, invented values, and unreadable table cells. Regenerate or targeted-edit affected slides when defects are found.
    - For selected-page updates, copy accepted unchanged slide images into a new version folder, regenerate only requested pages, then repackage.
 
 ## Iteration Patterns
@@ -68,6 +76,12 @@ Use this skill to create a PPTX where every slide is a full-page raster image. T
 - **Remove content:** Add direct negative constraints such as `Do not include <term> anywhere.` Do not rely only on omission from allowed text.
 - **Style refresh:** Reuse the frozen content spec and regenerate all slide images with the revised style contract.
 - **Content correction:** Regenerate the affected slide from corrected exact text. Do not patch text with native PPT boxes unless the user switches to a hybrid editable workflow.
+- **Text fidelity failure:** Revise the prompt and regenerate or use image editing on the affected full-slide image. Prefer larger text, fewer rows per slide, clearer table hierarchy, and explicit exact-text blocks. Do not switch to programmatic final rendering unless the user approves that change.
+
+## Non-Goals
+
+- This is not a PIL/matplotlib/HTML-to-image deck generator. Programmatic rendering produces a different class of output and should not be presented as an image-generated PPT workflow.
+- Do not claim that prompts were kept only for traceability if final slide images were actually drawn by code. If a non-image-generation path is used because the user asked for it, disclose that workflow explicitly.
 
 ## Useful Resources
 
@@ -83,4 +97,8 @@ Return:
 - preview or contact sheet absolute path
 - concise list of generated or changed pages
 - verification performed
-- residual risks, especially image-model text fidelity for dense text or tables
+- residual risks, especially image-model text fidelity for dense text or tables, plus any pages that were regenerated or still need user review
+
+## Revision Notes
+
+- v1.1: Clarified that `image_gen` is the primary renderer for final slide images; programmatic drawing is limited to auxiliary QA, previews, extraction, and packaging unless the user explicitly switches workflows.
