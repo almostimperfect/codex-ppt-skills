@@ -1,130 +1,132 @@
 ---
 name: image-ppt-to-editable
-description: Convert image-based PowerPoint decks into semi-editable PPTX files by isolating each slide image, using AI visual understanding to recover text and layout, generating a textless version of each slide in a clean context, then rebuilding editable text boxes over the cleaned background. Use when the user wants a picture-only PPT, generated slide deck, or screenshot-based presentation converted into a layered PPT where text can be revised.
+description: 将图片版 PPT、纯图片 PPT、截图式幻灯片或图片生成的 PPT 转换成可编辑 PPTX，尤其适用于用户要求“可编辑版本”“文字可编辑”“图片版 PPT 转可编辑”“PPT 文字可编辑”“把 PPT 变成可改文字的版本”“editable version”“text-editable PPT”等场景。流程必须先逐页提取或渲染原图，用视觉理解识别文字和版式并输出 layout JSON，再为每页生成去除文字的 textless background，最后在清理后的底图上重建 editable text boxes。不要走 OCR-first，不要直接在原图上叠字。
 ---
 
 # Image PPT To Editable
 
-Version: v1.2
+Version: v1.4
 
-## Purpose
+## 用途
 
-Use this skill to convert a picture-only deck into a semi-editable deck:
+使用这个 skill 将纯图片或图片版 PPT 转换成文字可编辑的 PPTX：
 
-- bottom layer: textless slide image background
-- top layer: editable PowerPoint text boxes reconstructed from the original image
+- 底层：去除文字后的整页图片底图，也就是 textless background
+- 上层：根据原图重建的 PowerPoint 可编辑文本框，也就是 editable text boxes
 
-This is not a full vector reconstruction workflow. Preserve image style and make text editable; do not attempt to recreate every table line, icon, or illustration as native PPT shapes unless the user explicitly asks.
+这不是把图片 PPT 完全反编译成原生 PPT 形状的流程。目标是保留原始视觉风格，同时让文字可编辑；除非用户明确要求，不要尝试把每条表格线、图标或插图都重建成原生 PPT shape。
 
-Bundled scripts are convenience helpers and reference implementations, not mandatory runtime requirements. If a script cannot run in the user's environment, continue with an equivalent local method that preserves the same output contract.
+内置脚本只是辅助工具和参考实现，不是强制运行时依赖。如果脚本在用户环境中无法运行，继续使用可用的等价方法，但必须保持同样的输出契约。
 
-## Non-Negotiable Output Contract
+## 不可变输出契约
 
-The output must be a semi-editable reconstruction, not OCR text placed over the original slide image.
+最终输出必须是“文字可编辑”的重建版本，不是 OCR 识别文字后直接叠在原始幻灯片图片上。
 
-Required layers for every converted slide:
+每一页必须包含两层：
 
-1. A full-slide background image where all original text has been removed.
-2. Editable PowerPoint text boxes placed above that cleaned background.
+1. 一张整页底图，其中原始文字已经全部去除。
+2. 叠加在清理后底图上的 PowerPoint 可编辑文本框。
 
-Do not use the original slide image as the final background after extracting text. That creates duplicate/ghost text and fails the purpose of this skill.
+不要把原始幻灯片图片作为最终背景再叠加文本框。这样会产生重复文字或残留文字，属于失败转换。
 
-Do not switch to an OCR-first workflow. OCR may be used only as a secondary cross-check for missed text after Agent visual understanding has produced the layout. The source of truth is the Agent's visual interpretation of the original slide, including semantic role, grouping, position, and style.
+不要切换成 OCR-first 流程。OCR 只能作为辅助检查，用来发现视觉理解之后是否遗漏了小字或数字。真正的 source of truth 是 Agent 对原始页面的视觉理解，包括文本语义、分组、位置、字号、颜色、粗细和对齐。
 
-If no image editing/generation path is available to create a textless background, stop and report the blocker. Do not silently degrade to a PPTX with editable text over the original image.
+如果当前环境没有任何可用的图像编辑或图像生成能力来创建 textless background，必须停止并报告 blocker。不要静默退化成“原图 + 可编辑文字层”的 PPTX。
 
-## Core Principle
+## 核心原则
 
-Do the text-removal image edit in an isolated context per slide. Do not ask the image model to edit a target slide from a long thread containing many related slide previews. Long multimodal context can cause the model to borrow layout from other images and add or remove non-text elements.
+每页去文字底图都要在隔离上下文中单独生成。不要在包含多页幻灯片预览的长对话里让图像模型编辑某一页；长 multimodal context 容易让模型借用其他页面的版式，或者增删非文字元素。
 
-Preferred isolation methods:
+优先使用这些隔离方式：
 
-- Use a subagent or clean child context for exactly one slide image.
-- Use a clean work item containing only the target slide image and the short text-removal prompt.
-- If subagents are unavailable, start a minimal local iteration where the target image is the only visible image immediately before image generation.
+- 为每一页使用一个 subagent 或干净子上下文。
+- 使用只包含目标页图片和短提示词的 clean work item。
+- 如果没有 subagent，就在最小上下文里执行本地迭代，确保图像生成前唯一可见的图片就是目标页。
 
-The main agent owns orchestration, validation, and final packaging. Isolated workers only produce one textless background image at a time.
+主 Agent 负责调度、验证和最终打包。隔离 worker 只负责一次生成一页 textless background。
 
-## Workflow
+## 工作流程
 
-1. **Intake**
-   - Identify the source PPTX or slide images.
-   - If the source is PPTX, extract or render each slide to a full-page PNG.
-   - Keep page size and slide order.
+1. **输入整理**
+   - 识别源文件是 PPTX 还是一组幻灯片图片。
+   - 如果源文件是 PPTX，先把每页提取或渲染成整页 PNG。
+   - 保持页面尺寸、宽高比和页序不变。
 
-2. **Visual Text Understanding**
-   - Use Agent visual understanding on the original target slide image.
-   - Extract a structured text layout from visual inspection, not raw OCR:
-     - text
-     - approximate bounding box
-     - role: title, subtitle, metric, table_header, table_cell, card_title, card_body, icon_label
-     - grouping: table, metric cluster, card group, flow step
-     - style hints: size, color, weight, alignment
-   - Capture text as editable content only; table lines, icons, illustrations, cards, and decorative shapes remain part of the background image.
-   - Traditional OCR is not the workflow. Use it only, if useful, to check for missed small text or numeric labels after the visual layout is drafted.
+2. **视觉理解文字和版式**
+   - 让 Agent 直接看原始目标页图片。
+   - 从视觉理解中提取结构化 layout JSON，不要从 raw OCR 开始：
+     - `text`
+     - 近似 `bbox`
+     - `role`：例如 `title`、`subtitle`、`metric`、`table_header`、`table_cell`、`card_title`、`card_body`、`icon_label`
+     - `grouping`：例如表格、指标组、卡片组、流程步骤
+     - `style hints`：字号、颜色、粗细、对齐
+   - 只把文字作为可编辑内容记录下来；表格线、图标、插图、卡片、装饰形状都保留在图片底图里。
+   - OCR 不是这个流程。只有在有帮助时，才用 OCR 辅助检查是否漏掉小字、数字或标签。
 
-3. **Generate Textless Background**
-   - Run image generation/editing in a clean per-slide context.
-   - Use the concise prompt in `references/text-removal-prompts.md` as the default.
-   - Preserve all non-text visual elements: icons, table lines, cards, illustrations, gradients, shadows, colors, and layout.
-   - Remove all readable text in any language, including digits, percentages, labels, table contents, and small captions.
-   - Produce and keep a separate file such as `textless/slide-01.png`; never overwrite the extracted original image.
+3. **生成 textless background**
+   - 在干净的逐页上下文中运行图像生成或图像编辑。
+   - 默认使用 `references/text-removal-prompts.md` 里的简短提示词。
+   - 保留所有非文字视觉元素：图标、表格线、色块、插图、渐变、阴影、颜色和布局。
+   - 移除所有可读文字，包括中文、英文、数字、百分比、标签、表格内容和小标题。
+   - 输出并保留单独文件，例如 `textless/slide-01.png`；不要覆盖提取出来的原图。
 
-4. **Validate Textless Background**
-   - Compare original and textless images visually.
-   - Pass only if:
-     - no readable text remains
-     - no new non-text elements were added
-     - no important icons or illustrations were removed
-     - table and card structure stayed close enough for text overlay
-     - slide size/aspect ratio is unchanged
-   - If validation fails, retry the textless background in a clean context with a slightly stricter prompt. Do not keep retrying blindly; report persistent failures.
+4. **验证 textless background**
+   - 视觉比较原图和去文字底图。
+   - 只有满足这些条件才通过：
+     - 没有可读文字残留
+     - 没有新增非文字元素
+     - 没有删除重要图标或插图
+     - 表格和卡片结构足够接近，便于后续文字叠加
+     - 页面尺寸和宽高比不变
+   - 如果验证失败，用更严格的提示词在干净上下文中重试。不要盲目无限重试；持续失败时报告问题。
 
-5. **Rebuild Editable Text Layer**
-   - Place the textless background as a full-slide image.
-   - Add PowerPoint text boxes from the visual text layout.
-   - Before packaging, confirm that the background image path points to the cleaned/textless image, not the original extracted slide image.
-   - Prefer `scripts/package_editable_layers.py` when Python and `python-pptx` are already available.
-   - If the helper cannot run, read it as a reference for the expected layout behavior and continue with an equivalent method available in the environment, such as a Node.js PPTX library, a locally available office tool, direct Open XML generation, or another reliable PPTX writer.
-   - Do not stop only because a convenience script is missing a dependency. Install missing packages only when appropriate for the environment and after any required user approval.
-   - Use the source deck size when available; otherwise use a standard 16:9 widescreen slide.
-   - Approximate font size, color, boldness, and alignment.
-   - Set language-appropriate fonts in the layout JSON when needed; rely on script defaults only as fallbacks.
-   - Tables can remain image backgrounds; put editable table cell text on top.
-   - Keep text boxes simple and easy to edit. Prefer one text box per meaningful line/cell over one giant text box.
+5. **重建可编辑文字层**
+   - 把 textless background 作为整页底图放入 PPT。
+   - 根据 layout JSON 添加 PowerPoint 文本框。
+   - 打包前确认 background 路径指向清理后的 textless 图片，而不是原始提取图片。
+   - 如果 Python 和 `python-pptx` 已可用，优先使用 `scripts/package_editable_layers.py`。
+   - 如果辅助脚本无法运行，把它作为布局行为参考，继续使用当前环境中可用的等价方法，例如 Node.js PPTX 库、本地办公软件、直接生成 Open XML，或其他可靠 PPTX 写入方式。
+   - 不要因为辅助脚本缺少依赖就停止。只有在环境适合且获得必要批准后，才安装缺失包。
+   - 有源 PPTX 时沿用源页面尺寸；否则使用标准 16:9 宽屏。
+   - 近似还原字号、颜色、粗细和对齐。
+   - 需要中文或其他语言字体时，在 layout JSON 中设置合适字体；脚本默认字体只能作为 fallback。
+   - 表格可以保留为图片底图；把可编辑的表格单元格文字叠加在上面。
+   - 文本框保持简单、便于编辑。优先一行或一个单元格一个文本框，不要把整页内容塞进一个巨大的文本框。
 
-6. **Render And QA**
-   - Render the rebuilt PPTX to PNG previews.
-   - Inspect for:
-     - text/background misalignment
-     - duplicate text or residual ghost text
-     - clipped or overlapping text boxes
-     - missing rows, labels, or metrics
-     - accidental use of the original slide image as the background
-   - When possible, compare against the original image and produce a short issue list.
-   - If duplicate text is visible, treat it as a failed conversion and regenerate the textless background or fix the packaging input. Do not deliver it as acceptable output.
+6. **渲染和 QA**
+   - 把重建后的 PPTX 渲染成 PNG 预览。
+   - 检查：
+     - 文字和背景是否错位
+     - 是否有重复文字或残留 ghost text
+     - 文本框是否裁切或重叠
+     - 是否漏掉行、标签或指标
+     - 是否误用了原始幻灯片图片作为背景
+   - 尽可能与原图对比，并输出简短问题清单。
+   - 如果能看到重复文字，视为转换失败。需要重新生成 textless background 或修正打包输入，不要把这种结果交付为可接受输出。
 
-7. **Deliver**
-   - Return the semi-editable PPTX path.
-   - Return preview paths and any per-slide known issues.
-   - State clearly that the output is semi-editable: text is editable, but backgrounds, icons, tables, and illustrations remain images.
+7. **交付**
+   - 返回文字可编辑 PPTX 路径。
+   - 返回预览图路径和每页已知问题。
+   - 明确说明：文字可编辑；背景、图标、表格线和插图仍然是图片。
 
-## Recommended POC Strategy
+## 推荐 POC 策略
 
-Before batch conversion, test the hardest slide first: usually a dense table or metric page.
+批量转换前先测最难的一页，通常是密集表格页或指标页。
 
-1. Convert one slide.
-2. Render the semi-editable result.
-3. Ask the user whether the textless background and overlay quality are acceptable.
-4. Batch the remaining slides only after the sample passes.
+1. 先转换一页。
+2. 渲染文字可编辑结果。
+3. 让用户确认 textless background 和文字叠加质量是否可接受。
+4. 样例通过后再批量处理剩余页面。
 
-## Resources
+## 资源
 
-- `references/text-removal-prompts.md`: prompts for per-slide textless background generation.
-- `references/layout-json.md`: suggested structure for visual text layout extraction.
-- `scripts/package_editable_layers.py`: convenience helper and reference implementation for packaging textless backgrounds plus layout JSON into a semi-editable PPTX.
+- `references/text-removal-prompts.md`：逐页生成 textless background 的提示词。
+- `references/layout-json.md`：视觉理解文字版式时推荐的 layout JSON 结构。
+- `scripts/package_editable_layers.py`：把 textless backgrounds 和 layout JSON 打包成文字可编辑 PPTX 的辅助脚本和参考实现。
 
-## Revision Notes
+## 版本记录
 
-- v1.2: Made the semi-editable reconstruction contract explicit: cleaned textless background is required, OCR is only a secondary check, and agents must not fall back to overlaying editable text on the original image.
-- v1.1: Clarified that bundled scripts are convenience helpers, not hard requirements; agents should adapt packaging to available local tools and only install dependencies when appropriate.
+- v1.4: 将 skill frontmatter 和正文改为中文主导，并保留关键英文技术词，提升中文“可编辑版本/文字可编辑”请求的触发和执行稳定性。
+- v1.3: 扩展 “editable version”“text-editable” 及中文等价说法的触发措辞。
+- v1.2: 明确文字可编辑重建契约：必须使用去文字底图，OCR 只能辅助检查，不能退化为在原图上叠加可编辑文字。
+- v1.1: 明确内置脚本只是辅助工具，不是硬依赖；Agent 应根据本地可用工具继续完成打包，只在合适时安装依赖。

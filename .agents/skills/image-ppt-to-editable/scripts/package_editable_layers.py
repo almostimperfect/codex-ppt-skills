@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a semi-editable PPTX from textless backgrounds and visual layout JSON.
+"""Build an editable-text PPTX from textless backgrounds and visual layout JSON.
 
 Inputs:
 - a directory of background images named slide-01.png, slide-02.png, ...
