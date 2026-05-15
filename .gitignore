@@ -26,6 +26,20 @@ backup.zip
 *.log
 logs/
 
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+credentials.json
+secrets.json
+
 # Python
 __pycache__/
 *.py[cod]
